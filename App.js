@@ -13,15 +13,23 @@ export default class App extends React.Component {
   }
 
   _onSelectionChange = (event) => {
-    console.log('selection changed to ', event.nativeEvent.selection)
-    this.setState({
-      selection: event.nativeEvent.selection,
-    })
+    let selection = event.nativeEvent.selection
+    console.log('selection changed to ', selection)
+    this.setState({selection})
   }
 
   _onButtonPress = () => {
     let {text, selection} = this.state
     selection = selection || {start: 0, end: 0}
+    if (selection.end < selection.start) {
+      // This only happens on android. Repro: in the simulator, select
+      // with shift-left.
+      console.log('Fixing up selection so that start <= end')
+      selection = {
+        start: selection.end,
+        end: selection.start,
+      }
+    }
     text = text.substring(0, selection.start) + "foo" + text.substring(selection.end)
     this.setState({text})
   }
