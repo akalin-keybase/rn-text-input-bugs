@@ -1,13 +1,20 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default class App extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { text: 'test' }
+  }
+
+  _onChangeText = (text) => {
+    this.setState({text})
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
-        <Text>Changes you make will automatically reload.</Text>
-        <Text>Shake your phone to open the developer menu.</Text>
+        <TextInput style={{height:40, width: 150, borderColor: 'black', borderWidth: 1}} onChangeText={this._onChangeText} value={this.state.text} />
       </View>
     );
   }
