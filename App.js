@@ -44,8 +44,20 @@ export default class App extends React.Component {
         end: selection.start,
       }
     }
-    text = text.substring(0, selection.start) + "foo" + text.substring(selection.end)
-    this.setState({text})
+    const insertedText = "foo"
+    text = text.substring(0, selection.start) + insertedText + text.substring(selection.end)
+    // The selection behavior after a text change differs between
+    // platforms; on iOS, it moves to the end without triggering an
+    // onSelectionChange event. On Android, it triggers an
+    // onSelectionChange event with some indeterminate position
+    // (e.g. the selection shifted by some number of places the
+    // right). So we set the selection explicitly, and on Android we
+    // also wait for the next selection change.
+    let androidWaitingForNextSelectionChange = isAndroid
+    const newEnd = selection.start + insertedText.length
+    const newState = {text, androidWaitingForNextSelectionChange, selection: {start: newEnd, end: newEnd}}
+    console.log('merging new state', newState)
+    this.setState(newState)
   }
 
   render() {
