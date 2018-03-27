@@ -1,10 +1,19 @@
 import React from 'react';
-import { StyleSheet, Button, TextInput, View } from 'react-native';
+import { StyleSheet, Platform, Button, TextInput, View } from 'react-native';
+
+const isIOS = Platform.OS === 'ios'
+const isAndroid = !isIOS
 
 export default class App extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { text: 'test' }
+    const text = 'initial text'
+    // It's not documented anywhere, but it appears that the initial
+    // selection is always set to the end of the initial text.
+    const start = text.length
+    const end = text.length
+    this.state = { text, androidWaitingForNextSelectionChange: isAndroid, selection: {start, end} }
+    console.log('initial state', this.state)
   }
 
   _onChangeText = (text) => {
@@ -13,14 +22,19 @@ export default class App extends React.Component {
   }
 
   _onSelectionChange = (event) => {
-    let selection = event.nativeEvent.selection
-    console.log('selection changed to ', selection)
-    this.setState({selection})
+    if (this.state.androidWaitingForNextSelectionChange) {
+      console.log('next selection change encountered; overriding selection from', event.nativeEvent.selection, 'to', this.state.selection)
+      const selection = this.state.selection
+      this.setState({selection, androidWaitingForNextSelectionChange: false})
+    } else {
+      const selection = event.nativeEvent.selection
+      console.log('selection changed to ', selection)
+      this.setState({selection})
+    }
   }
 
   _onButtonPress = () => {
     let {text, selection} = this.state
-    selection = selection || {start: 0, end: 0}
     if (selection.end < selection.start) {
       // This only happens on android. Repro: in the simulator, select
       // with shift-left.
@@ -35,9 +49,17 @@ export default class App extends React.Component {
   }
 
   render() {
+    let selection = this.state.selection
+    if (isAndroid && this.state.androidWaitingForNextSelectionChange) {
+      // Work around a bug on android where when a TextInput's value
+      // and selection are both changed, the selection is applied
+      // first, which leads to a crash if it's out of bounds of the
+      // *old* value.
+      selection = undefined
+    }
     return (
       <View style={styles.container}>
-        <TextInput style={{height:40, width: 150, borderColor: 'black', borderWidth: 1}} onChangeText={this._onChangeText} onSelectionChange={this._onSelectionChange} value={this.state.text} />
+        <TextInput style={{height:40, width: 150, borderColor: 'black', borderWidth: 1}} onChangeText={this._onChangeText} onSelectionChange={this._onSelectionChange} selection={selection} value={this.state.text} />
         <Button onPress={this._onButtonPress} title="Replace selection with foo" />
       </View>
     );
